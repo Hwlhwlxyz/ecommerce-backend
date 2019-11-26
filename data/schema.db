@@ -1,0 +1,109 @@
+CREATE TABLE `address` (
+  `aid` int(11) NOT NULL,
+  `street` varchar(255) DEFAULT NULL,
+  `city` varchar(255) DEFAULT NULL,
+  `state` varchar(255) DEFAULT NULL,
+  `zcode` int(11) DEFAULT NULL
+)
+
+ALTER TABLE `address`
+  ADD PRIMARY KEY (`aid`);
+
+CREATE TABLE `business` (
+  `id` bigint(20) NOT NULL,
+  `business_category` varchar(255) DEFAULT NULL,
+  `comp_gross_annual_income` int(11) DEFAULT NULL
+)
+
+ALTER TABLE `business`
+  ADD PRIMARY KEY (`id`);
+
+CREATE TABLE `classification` (
+  `kid` int(11) NOT NULL,
+  `kind` varchar(255) DEFAULT NULL
+)
+
+ALTER TABLE `classification`
+  ADD PRIMARY KEY (`kid`);
+
+
+
+CREATE TABLE `customers` (
+  `id` bigint(20) NOT NULL,
+  `username` varchar(32) NOT NULL,
+  `password` varchar(64) NOT NULL,
+  `aid` int(11) DEFAULT NULL,
+  `came` varchar(255) DEFAULT NULL,
+  `ckind` varchar(255) DEFAULT NULL,
+  `cname` varchar(255) DEFAULT NULL
+)
+
+ALTER TABLE `customers`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `aid` (`aid`);
+
+
+CREATE TABLE `home` (
+  `id` bigint(20) NOT NULL,
+  `age` int(11) DEFAULT NULL,
+  `gender` varchar(255) DEFAULT NULL,
+  `income` int(11) DEFAULT NULL,
+  `marriage_status` varchar(255) DEFAULT NULL
+)
+
+ALTER TABLE `home`
+  ADD PRIMARY KEY (`id`);
+
+CREATE TABLE `product` (
+  `pid` bigint(20) NOT NULL,
+  `pname` varchar(64) NOT NULL,
+  `price` double NOT NULL,
+  `inventory_amount` int(11) NOT NULL,
+  `kindid` int(11) NOT NULL
+)
+
+ALTER TABLE `product`
+  ADD PRIMARY KEY (`product_id`);
+
+CREATE TABLE `region` (
+  `id` bigint(20) NOT NULL,
+  `region_manager` varchar(255) DEFAULT NULL,
+  `region_name` varchar(255) DEFAULT NULL
+)
+
+CREATE TABLE `salesperson` (
+  `id` int(11) NOT NULL,
+  `name` varchar(255) DEFAULT NULL,
+  `email` varchar(255) DEFAULT NULL,
+  `jobtitle` varchar(255) DEFAULT NULL,
+  `salary` float DEFAULT NULL,
+  `aid` int(11) DEFAULT NULL,
+  `username` varchar(32) NOT NULL,
+  `password` varchar(64) NOT NULL
+)
+ALTER TABLE `salesperson`
+  ADD PRIMARY KEY (`id`);
+
+
+CREATE TABLE `store` (
+  `id` bigint(20) NOT NULL,
+  `address` varchar(255) DEFAULT NULL,
+  `num_of_salesperson` int(11) DEFAULT NULL,
+  `region_id` int(11) DEFAULT NULL,
+  `store_manager` varchar(255) DEFAULT NULL
+)
+ALTER TABLE `store`
+  ADD PRIMARY KEY (`id`);
+
+
+
+CREATE TABLE `transaction` (
+  `onum` bigint(20) NOT NULL,
+  `amount` int(11) DEFAULT NULL,
+  `cid` int(11) DEFAULT NULL,
+  `pid` int(11) DEFAULT NULL,
+  `sid` int(11) DEFAULT NULL,
+  `createdate` date DEFAULT NULL
+)
+ALTER TABLE `transaction`
+ADD PRIMARY KEY (`onum`);
