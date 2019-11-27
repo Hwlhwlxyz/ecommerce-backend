@@ -1,4 +1,5 @@
 import datetime
+import decimal
 
 import flask
 from flask import render_template, request, jsonify, Response, redirect, url_for, flash
@@ -9,13 +10,22 @@ from app import app, database
 
 from app.models import *
 
+
 def datetime_handler(x):
     if isinstance(x, datetime):
         return x.isoformat()
     raise TypeError("Unknown type")
 
+
+def decimal_handler(o):
+    if isinstance(o, decimal.Decimal):
+        return float(o)
+    raise TypeError("Unknown type")
+
+
 def serialize_list(self):
     return [m.serialize() for m in self]
+
 
 @app.route('/index')
 def index():
@@ -26,29 +36,33 @@ def index():
 def login():
     print(request.json)
     print(request)
-    return jsonify({'test':'test'})
+    return jsonify({'test': 'test'})
+
 
 @app.route('/q', methods=['GET'])
 def querytest():
     print(Customer.querytest())
     result = Customer.querytest()
-    #return {'result',Customer.querytest()}
+    # return {'result',Customer.querytest()}
     return jsonify(result)
+
 
 @app.route('/q2', methods=['GET'])
 def querytest2():
     print(Customer.querytest2())
     result = Customer.querytest2()
-    #return {'result',Customer.querytest()}
+    # return {'result',Customer.querytest()}
     return jsonify(result)
+
 
 @app.route('/qadd', methods=['GET'])
 def qadd():
     c = Customer('cname', 'home', '1', 'u1', 'p1')
     result = c.add()
-    return {'result':result}
+    return {'result': result}
 
-#customer
+
+# customer
 @app.route('/customer/<ckind>/login', methods=['POST'])
 def customer_login(ckind):
     username = request.json['username']
@@ -59,6 +73,7 @@ def customer_login(ckind):
     else:
         return {"error": "wrong password"}, 400
 
+
 @app.route('/customer/update/<cid>', methods=['POST'])
 def customer_info_update(cid):
     accountinfojson = request.json
@@ -66,11 +81,9 @@ def customer_info_update(cid):
     c = Customer.query.filter_by(cid=cid).update(accountinfojson)
     db.session.commit()
     if c:
-        return {"success":"updated","return":c}
+        return {"success": "updated", "return": c}
     else:
         return {"error": "wrong password"}, 400
-
-
 
 
 @app.route('/customer/getbyid/<cid>', methods=['GET'])
@@ -82,18 +95,19 @@ def customer_getbyid(cid):
     else:
         return {"error": "wrong password"}, 400
 
+
 @app.route('/customer/<ckind>/<cid>', methods=['GET'])
 def customerinfo_home_business(ckind, cid):
     c = None
-    if ckind=="home":
+    if ckind == "home":
         c = Home.getbycustomerid(cid)
-    elif ckind=="business":
+    elif ckind == "business":
         c = Business.getbycustomerid(cid)
     print(c)
     if c:
         return jsonify(c.serialize())
     else:
-        return {"error": ckind+ " " + cid +" not found"}, 400
+        return {"error": ckind + " " + cid + " not found"}, 400
 
 
 @app.route('/customer/update/<ckind>/<cid>', methods=['POST'])
@@ -101,29 +115,27 @@ def customerinfo_update_home_business(ckind, cid):
     c = None
     info = request.json
     print(info)
-    if ckind=="home":
-        homejson={
-            'income':info['income'],
+    if ckind == "home":
+        homejson = {
+            'income': info['income'],
             'marriage_status': info['marriage_status'],
-            'gender':info['gender'],
-            'age':info['age']
+            'gender': info['gender'],
+            'age': info['age']
         }
         c = Home.query.filter_by(customerid=cid).update(homejson)
         db.session.commit()
-    elif ckind=="business":
-        businessjson={
-            'business_category':info['business_category'],
-            'comp_gross_annual_income':info['comp_gross_annual_income']
+    elif ckind == "business":
+        businessjson = {
+            'business_category': info['business_category'],
+            'comp_gross_annual_income': info['comp_gross_annual_income']
         }
         c = Business.query.filter_by(customer=cid).update(businessjson)
         db.sesion.commit()
     print(c)
     if c:
-        return {"success":"updated", "result":c}
+        return {"success": "updated", "result": c}
     else:
-        return {"error": ckind+ " " + cid +" update error"}, 400
-
-
+        return {"error": ckind + " " + cid + " update error"}, 400
 
 
 @app.route('/customer/getwithaddress/<cid>', methods=['GET'])
@@ -138,13 +150,13 @@ def customer_getwithaddress(cid):
 
 @app.route('/address/getbycid/<cid>', methods=['GET'])
 def address_getbycid(cid):
-
     c = Address.getbycustomerid(cid)
-    print('getaddress!!',c)
+    print('getaddress!!', c)
     if c:
         return jsonify(c.serialize())
     else:
         return {"error": "get with address error"}, 400
+
 
 @app.route('/address/update/<cid>', methods=['POST'])
 def address_update(cid):
@@ -153,14 +165,14 @@ def address_update(cid):
 
     c = Address.query.filter_by(aid=addressjson['aid']).update(addressjson)
     db.session.commit()
-    print('getaddress!!',c)
+    print('getaddress!!', c)
     if c:
-        return {"success":"updated", "result":c}
+        return {"success": "updated", "result": c}
     else:
         return {"error": "get with address error"}, 400
 
 
-#classification
+# classification
 @app.route('/classification', methods=['GET'])
 def get_all_classification():
     c = Classification.get_all()
@@ -169,6 +181,7 @@ def get_all_classification():
         return json.dumps(kinds)
     else:
         return {"error": "error"}, 400
+
 
 @app.route('/classification/getbypid/<pid>', methods=['GET'])
 def get_classification_by_pid(pid):
@@ -180,7 +193,17 @@ def get_classification_by_pid(pid):
         return {"error": "error"}, 400
 
 
-#product
+@app.route('/classification/topcategories', methods=['GET'])  # get all transactions
+def topcategories():
+    results = Classification.get_top_classification()
+    if results:
+        return json.dumps(results, default=decimal_handler)
+    else:
+        return {"error", "no transaction"}, 400
+
+
+
+# product
 @app.route('/product/getbyclassification/<kind>', methods=['GET'])
 def get_products_byclassification(kind):
     print(kind)
@@ -191,6 +214,7 @@ def get_products_byclassification(kind):
         return json.dumps(p_list)
     else:
         return {"error": "error"}, 400
+
 
 @app.route('/product/all', methods=['GET'])
 def get_all_products():
@@ -220,9 +244,10 @@ def product_add():
     print(productinfo, kindsinfo)
     return p.serialize()
 
+
 @app.route('/product/edit', methods=['POST'])
 def product_edit():
-    print("edit"*10)
+    print("edit" * 10)
     jsoninfo = request.json
     print(jsoninfo)
     productinfo = jsoninfo['product']
@@ -235,7 +260,7 @@ def product_edit():
     }
     result = Product.query.filter_by(pid=productinfo['pid']).update(newproductinfo)
     db.session.commit()
-    #delete all kinds of this product then add new kinds
+    # delete all kinds of this product then add new kinds
     Classification.query.filter_by(pid=productinfo['pid']).delete()
     db.session.commit()
 
@@ -243,58 +268,67 @@ def product_edit():
         newk = Classification(productinfo['pid'], k)
         newk.add()
     print(productinfo, kindsinfo)
-    return {"success":"updated"}
-
-
+    return {"success": "updated"}
 
 
 #transaction
-@app.route('/transaction/getbycid/<cid>/submit', methods=['GET']) #submit list of transactions
+@app.route('/transaction/getbycid/<cid>/submit', methods=['GET'])  # submit list of transactions
 def transactions_submit(cid):
     print(request.json)
     print(cid)
-    return {'m':'test'}
+    return {'m': 'test'}
 
-@app.route('/transaction', methods=['GET']) #get all transactions
+
+@app.route('/transaction', methods=['GET'])  # get all transactions
 def get_all_transactions():
     results = Transaction.query.all()
     if results:
         return json.dumps(Transaction.serialize_list(results), default=datetime_handler)
     else:
-        return {"error","no transaction"}, 400
+        return {"error", "no transaction"}, 400
 
-@app.route('/transactionlist/<cid>/<sid>/submit', methods=['POST']) #get all transactions
-def transactionlist_submit(cid,sid):
+
+@app.route('/transactionlist/<cid>/<sid>/submit', methods=['POST'])  # get all transactions
+def transactionlist_submit(cid, sid):
     print(request.json)
     transactionlist = request.json
     for t in transactionlist:
-        if t['inventory_amount']<t['select_amount']:
+        if t['inventory_amount'] < t['select_amount']:
             return {"error": "out of stock", "pid": t['pid']}, 400
     print(sid)
     result = []
 
-
-
     for t in transactionlist:
         # add transactions
-        newtransaction = Transaction(t['select_amount'],cid,t['pid'],sid)
+        newtransaction = Transaction(t['select_amount'], cid, t['pid'], sid)
         newtransaction.add()
         result.append(newtransaction.serialize())
-        #update totalprice
+        # update totalprice
         newtransaction.update_totalprice()
-        #decrease product
+        # decrease product
         newtransaction.decrease_product_inventoryamount()
 
-    return {"success":"updated"}
 
-#store
-@app.route('/store/getall', methods=['GET']) #get all transactions
+    return {"success": "updated"}
+
+
+@app.route('/transaction/salesandprofit', methods=['GET'])
+def get_salesandprofit():
+    results = Transaction.get_sales_and_profit()
+    if results:
+        return json.dumps(results, default=decimal_handler)
+    else:
+        return {"error", "no transaction"}, 400
+
+
+# store
+@app.route('/store/getall', methods=['GET'])  # get all transactions
 def get_all_stores():
     results = Store.query.all()
     if results:
         return json.dumps(Store.serialize_list(results))
     else:
-        return {"error","no transaction"}, 400
+        return {"error", "no transaction"}, 400
 
 
 @app.route('/store', methods=['GET'])
@@ -303,17 +337,18 @@ def get_all_stores_info():
     if results:
         return json.dumps(results)
     else:
-        return {"error","no transaction"}, 400
+        return {"error", "no transaction"}, 400
 
 
-#region
-@app.route('/region/salesvolume', methods=['GET']) #get all transactions
+# region
+@app.route('/region/salesvolume', methods=['GET'])  # get all transactions
 def region_salesvolume():
     results = Region.region_salesvolume()
     if results:
         return json.dumps(Region.serialize_list(results))
     else:
         return {"error", "no transaction"}, 400
+
 
 @app.route('/region', methods=['GET'])
 def all_region():
@@ -323,15 +358,25 @@ def all_region():
     else:
         return {"error", "no transaction"}, 400
 
+@app.route('/region/sales', methods=['GET'])
+def get_all_sales_of_region():
+    results = Region.get_region_sales()
+    if results:
+        return json.dumps(results, default=decimal_handler)
+    else:
+        return {"error", "no transaction"}, 400
 
-#salesperson
-@app.route('/allsalespersons', methods=['GET']) #get all transactions
+
+
+
+# salesperson
+@app.route('/allsalespersons', methods=['GET'])  # get all transactions
 def get_all_salespersons():
     results = Salesperson.get_all()
-    if results and len(results)>0:
+    if results and len(results) > 0:
         return json.dumps(results)
     else:
-        return {"error","no transaction"}, 400
+        return {"error", "no transaction"}, 400
 
 
 @app.route('/salesperson/login', methods=['POST'])
@@ -343,6 +388,7 @@ def saleperson_login():
         return jsonify(c.serialize())
     else:
         return {"error": "wrong password"}, 400
+
 
 @app.route('/salesperson/<sid>', methods=['GET'])
 def get_salesperson_info(sid):

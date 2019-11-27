@@ -243,7 +243,28 @@ class Classification(db.Model):
         result = database.query_db(sql, {'pid': pid})
         return result
 
+    @staticmethod
+    def get_classification_order_descend():
+        sql = 'SELECT classification.kind, SUM(transaction.amount) as totalamount FROM classification, transaction WHERE classification.pid=transaction.pid GROUP BY classification.kind ORDER BY SUM(transaction.amount) Desc'
+        result = database.query_db(sql)
+        return result
 
+
+    @staticmethod
+    def get_top_classification():
+        sql="""SELECT categorynumbertable.totalamount, categorynumbertable.kind FROM
+        (SELECT classification.kind as kind, SUM(transaction.amount) as totalamount FROM classification, transaction WHERE classification.pid=transaction.pid  GROUP BY classification.kind) AS categorynumbertable
+        WHERE categorynumbertable.totalamount= (
+            SELECT MAX(totalamount) as maxcategoryamount
+            FROM (SELECT SUM(transaction.amount) as totalamount
+                  FROM classification,
+                       transaction
+                  WHERE classification.pid = transaction.pid
+                  GROUP BY classification.kind
+                  ORDER BY SUM(transaction.amount)) AS categoryamounttable
+        )"""
+        result = database.query_db(sql)
+        return result
 
     @staticmethod
     def get_by_pid_list(pid):
@@ -276,7 +297,19 @@ class Region(db.Model):
         result = db.session.commit()
         return result
 
-
+    @staticmethod
+    def get_region_sales():
+        sql = """SELECT region.rname,sum(transaction.amount) as salesamount
+        FROM region,store,salesperson,transaction
+        WHERE region.rid=store.rid
+              AND
+              store.rid=salesperson.storeid
+              AND
+              salesperson.sid=transaction.sid
+        GROUP BY transaction.amount,region.rname
+        """
+        result = database.query_db(sql)
+        return result
 
     @staticmethod
     def region_salesvolume():
@@ -437,7 +470,8 @@ class Transaction(db.Model):
 
     def update_totalprice(self):
         sql = """UPDATE {0} INNER JOIN (SELECT tid, {0}.amount*{1}.price as temptotalprice FROM {0}, {1} 
-        WHERE {0}.pid={1}.pid and {0}.tid=1) as temptotalpricetable ON {0}.tid=temptotalpricetable.tid SET totalprice=temptotalpricetable.temptotalprice WHERE {0}.tid=:tid""".format('transaction', 'product')
+        WHERE {0}.pid={1}.pid and {0}.tid=:tid) as temptotalpricetable ON {0}.tid=temptotalpricetable.tid SET totalprice=temptotalpricetable.temptotalprice WHERE {0}.tid=:tid""".format('transaction', 'product')
+        print(sql)
         result = database.query_db(sql, {"tid": self.tid})
         return result
 
@@ -463,4 +497,13 @@ class Transaction(db.Model):
         WHERE {0}.pid={1}.pid and {0}.tid=:tid
         """
         result = database.query_db(sql, {"tid": self.tid})
+        return result
+
+
+    @staticmethod
+    def get_sales_and_profit():
+        sql = """SELECT
+        pid, SUM(amount) AS sales, SUM(totalprice) AS profit FROM transaction GROUP BY pid
+        """
+        result = database.query_db(sql)
         return result
