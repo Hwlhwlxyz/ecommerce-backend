@@ -276,6 +276,8 @@ class Region(db.Model):
         result = db.session.commit()
         return result
 
+
+
     @staticmethod
     def region_salesvolume():
         sql = """
@@ -336,6 +338,26 @@ class Salesperson(db.Model):
         result = database.query_db(sql)
         return result
 
+    @staticmethod
+    def login(username, password):
+        r = Salesperson.query.filter_by(username=username, password=password).first()
+        return r
+
+    @staticmethod
+    def get_all_info(sid):
+        sql = """SELECT * FROM salesperson, address
+         WHERE salesperson_address=address.aid AND sid=:sid
+        """
+        result = database.query_db(sql, {'sid':sid}, one=True)
+        return result
+
+    def serialize(self):
+        """Transforms a model into a dictionary which can be dumped to JSON."""
+        # first we get the names of all the columns on your model
+        columns = [c.key for c in class_mapper(self.__class__).columns]
+        # then we return their values in a dict
+        return dict((c, getattr(self, c)) for c in columns)
+
 
 class Store(db.Model):
     __tablename__ = 'store'
@@ -359,6 +381,9 @@ class Store(db.Model):
         # then we return their values in a dict
         return dict((c, getattr(self, c)) for c in columns)
 
+    def serialize_list(self):
+        return [m.serialize() for m in self]
+
     def add(self):
         db.session.add(self)
         result = db.session.commit()
@@ -370,7 +395,11 @@ class Store(db.Model):
     #     kinds = [k['kind'] for k in result]
     #     return result
 
-
+    @staticmethod
+    def get_all_store_info():
+        sql = "SELECT * FROM store, address, salesperson WHERE store.addressid=address.aid AND store.smanagerid=salesperson.sid"
+        result = database.query_db(sql)
+        return result
 
 
 # transaction
@@ -404,4 +433,34 @@ class Transaction(db.Model):
     def add(self):
         db.session.add(self)
         result = db.session.commit()
+        return result
+
+    def update_totalprice(self):
+        sql = """UPDATE {0} INNER JOIN (SELECT tid, {0}.amount*{1}.price as temptotalprice FROM {0}, {1} 
+        WHERE {0}.pid={1}.pid and {0}.tid=1) as temptotalpricetable ON {0}.tid=temptotalpricetable.tid SET totalprice=temptotalpricetable.temptotalprice WHERE {0}.tid=:tid""".format('transaction', 'product')
+        result = database.query_db(sql, {"tid": self.tid})
+        return result
+
+    def decrease_product_inventoryamount(self):
+        sql = """UPDATE {0} INNER JOIN  
+        (SELECT {1}.pid, {0}.inventory_amount-{1}.amount as finalamount FROM {1}, {0} WHERE {1}.pid={0}.pid and tid=:tid) as tempamounttable 
+        ON tempamounttable.pid={0}.pid 
+        SET inventory_amount=tempamounttable.finalamount WHERE {0}.pid=:pid
+        """.format(Product.__tablename__, Transaction.__tablename__)
+
+        sql = """UPDATE product INNER JOIN  
+        (SELECT transaction.pid, product.inventory_amount-transaction.amount as finalamount FROM transaction, product WHERE transaction.pid=product.pid and tid=:tid) as tempamounttable ON tempamounttable.pid=product.pid SET inventory_amount=tempamounttable.finalamount WHERE product.pid=:pid
+        """
+
+        result = database.query_db(sql, {"pid":self.pid, "tid":self.tid})
+        print(result)
+        return result
+
+    def check_product_inventoryamount(self):
+        sql = """
+        SELECT {0}.tid, {0}.pid,{1}.inventory_amount, {1}.inventory_amount-{0}.amount as finalamount
+        from {0}, {1} 
+        WHERE {0}.pid={1}.pid and {0}.tid=:tid
+        """
+        result = database.query_db(sql, {"tid": self.tid})
         return result
