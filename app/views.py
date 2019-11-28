@@ -105,7 +105,7 @@ def customerinfo_home_business(ckind, cid):
         c = Business.getbycustomerid(cid)
     print(c)
     if c:
-        return jsonify(c.serialize())
+        return json.dumps(c.serialize())
     else:
         return {"error": ckind + " " + cid + " not found"}, 400
 
@@ -129,8 +129,8 @@ def customerinfo_update_home_business(ckind, cid):
             'business_category': info['business_category'],
             'comp_gross_annual_income': info['comp_gross_annual_income']
         }
-        c = Business.query.filter_by(customer=cid).update(businessjson)
-        db.sesion.commit()
+        c = Business.query.filter_by(customerid=cid).update(businessjson)
+        db.session.commit()
     print(c)
     if c:
         return {"success": "updated", "result": c}
@@ -210,6 +210,14 @@ def get_products_byclassification(kind):
     p_list = Product.get_by_classification(kind)
     for p in p_list:
         p['kind'] = Classification.get_by_pid_list(p['pid'])
+    if p_list:
+        return json.dumps(p_list)
+    else:
+        return {"error": "error"}, 400
+
+@app.route('/product/<text>', methods=['GET'])
+def search_text(text):
+    p_list = Product.search_name(text)
     if p_list:
         return json.dumps(p_list)
     else:
@@ -383,7 +391,7 @@ def get_all_salespersons():
 def saleperson_login():
     username = request.json['username']
     password = request.json['password']
-    c = Customer.login(username, password)
+    c = Salesperson.login(username, password)
     if c:
         return jsonify(c.serialize())
     else:

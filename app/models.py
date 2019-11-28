@@ -97,7 +97,7 @@ class Business(db.Model):
 
     @staticmethod
     def getbycustomerid(cid):
-        c = Business.query.get(cid)
+        c = Business.query.filter_by(customerid=cid).first()
         return c
 
 class Home(db.Model):
@@ -130,7 +130,7 @@ class Home(db.Model):
 
     @staticmethod
     def getbycustomerid(cid):
-        c = Home.query.get(cid)
+        c = Home.query.filter_by(customerid=cid).first()
         return c
 
 # end of customer kinds
@@ -207,7 +207,15 @@ class Product(db.Model):
         products = Product.query.all()
         return [p.serialize() for p in products]
 
-
+    @staticmethod
+    def search_name(text):
+        sql = """
+        SELECT *
+        FROM product
+        WHERE product.pname LIKE '%{}%'
+    """.format(text)
+        result = database.query_db(sql)
+        return result
 
 class Classification(db.Model):
     __tablename__ = 'classification'
