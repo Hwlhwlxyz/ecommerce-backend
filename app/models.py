@@ -515,3 +515,21 @@ class Transaction(db.Model):
         """
         result = database.query_db(sql)
         return result
+
+    #Which  businesses are buying given products the most?
+    @staticmethod
+    def most_given_products(given_product_pid):
+        sql = """
+        SELECT  transaction.pid,customer.cname,sum(transaction.amount) as producttotalamount
+                  FROM customer,transaction
+                  WHERE customer.cid=transaction.cid AND customer.ckind="business" AND pid=:pid
+                  GROUP BY transaction.pid,customer.cname
+                    HAVING producttotalamount>=
+                        ALL (SELECT   sum(transaction.amount) as groupamount
+                          FROM transaction, customer
+                        WHERE customer.cid=transaction.cid AND customer.ckind="business" AND pid=:pid
+                          GROUP BY transaction.pid, transaction.cid
+                        )
+        """.format()
+        result = database.query_db(sql, {'pid':given_product_pid})
+        return result

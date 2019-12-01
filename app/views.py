@@ -173,7 +173,7 @@ def address_update(cid):
 
 
 # classification
-@app.route('/classification', methods=['GET'])
+@app.route('/classification', methods=['G ET'])
 def get_all_classification():
     c = Classification.get_all()
     kinds = [k['kind'] for k in c]
@@ -327,6 +327,21 @@ def get_salesandprofit():
         return json.dumps(results, default=decimal_handler)
     else:
         return {"error", "no transaction"}, 400
+
+
+@app.route('/transaction/mostgivenproducts_boughtbyc/<pid>', methods=['GET'])
+def get_mostgivenproducts(pid):
+    results = Transaction.most_given_products(pid)
+    print(results, len(results),len(results)>0)
+    if ((len(results)) > 0):
+        print("true")
+        return json.dumps(results, default=decimal_handler)
+    else:
+        print("false")
+        return {"error", "no transaction"}
+
+
+
 
 
 # store
