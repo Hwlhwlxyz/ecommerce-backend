@@ -314,7 +314,7 @@ class Region(db.Model):
               store.rid=salesperson.storeid
               AND
               salesperson.sid=transaction.sid
-        GROUP BY transaction.amount,region.rname
+        GROUP BY region.rname
         """
         result = database.query_db(sql)
         return result

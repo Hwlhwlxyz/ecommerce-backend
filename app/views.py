@@ -173,7 +173,7 @@ def address_update(cid):
 
 
 # classification
-@app.route('/classification', methods=['G ET'])
+@app.route('/classification', methods=['GET'])
 def get_all_classification():
     c = Classification.get_all()
     kinds = [k['kind'] for k in c]
